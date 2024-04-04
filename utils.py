@@ -1,16 +1,17 @@
 import os
+import json
 import torch
 import torch.nn.functional as F
 
 from torchvision.transforms import transforms
 
-def get_image_transform(cfg, processor):
+def get_image_transform(cfg):
     transform = transforms.Compose([
-        # transforms.ToTensor(),
+        transforms.ToTensor(),
         transforms.Resize((cfg.img_size, cfg.img_size)),
         # transforms.RandomHorizontalFlip(0.5),
         # transforms.RandomVerticalFlip(0.5),
-        processor
+        # processor
     ])
     
     return transform
@@ -19,6 +20,53 @@ def get_box_transform(cfg):
     # return lambda x : torch.FloatTensor(x) / cfg.img_size
     return lambda x : torch.FloatTensor([x[1]+x[2]/2, x[0]+x[3]/2, x[2], x[3]]) / cfg.img_size
     # return lambda x: torch.FloatTensor(x)
+
+## get target for faster rcnn
+# def generate_target(pth):
+
+#     boxes = []
+#     labels = []
+
+#     for json_name in os.listdir(pth):
+#         json_pth = os.path.join(pth, json_name)
+
+#         with open(json_pth, "r") as f:
+#             data = json.load(f)
+#             bbox = data["annotations"]["bbox"]
+#             weed_lbl = data["annotations"]["weeds_kind"]
+#             lbl = 0
+            
+#             if (weed_lbl == 'N'):
+#                 lbl = 0
+#             elif (weed_lbl == 'E'):
+#                 lbl = 1
+#             elif (weed_lbl == 'A'):
+#                 lbl = 2
+#             elif (weed_lbl == 'V'):
+#                 lbl = 3
+#             elif (weed_lbl == 'I'):
+#                 lbl = 4
+#             elif (weed_lbl == 'B'): 
+#                 lbl = 5
+#             else: 
+#                 lbl = 6
+    
+#             boxes.append(bbox)
+#             labels.append(lbl)
+    
+#     boxes = torch.as_tensor(boxes, dtype=torch.float32)
+#     labels = torch.as_tensor(labels, dtype=torch.int64)
+    
+#     target = {}
+#     target["boxes"] = boxes
+#     target["labels"] = labels
+
+#     return target
+    
+## faster rcnn function
+def collate_fn(batch):
+    return tuple(zip(*batch))
+
     
 def calculate_iou(pred_boxes, gt_boxes):
     """

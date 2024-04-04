@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 import test
 
-def train(cfg, model, processor, train_dl, test_dl, optimizer, scheduler):
+def detr_train(cfg, model, processor, train_dl, test_dl, optimizer, scheduler):
     device = cfg.device
     
     model = model.to(device)
@@ -61,8 +61,46 @@ def train(cfg, model, processor, train_dl, test_dl, optimizer, scheduler):
                     'scheduler': scheduler.state_dict()},
                    os.path.join(cfg.ckpt_dir, f"{(epoch+1):0>5}_ckpt.pt"))
         
-        test.evaluate(cfg, model, test_dl)
+        test.detr_evaluate(cfg, model, test_dl)
             
             
             
 
+def frcnn_train(cfg, model, train_dl, test_dl, device):
+    device = cfg.device
+    
+    model = model.to(device)
+
+    params = [p for p in model.parameters() if p.requires_grad]
+    optimizer = torch.optim.SGD(params, lr=cfg.lr, momentum=0.9, weight_decay=cfg.weight_decay)
+
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, cfg.milestones, cfg.gamma, last_epoch=cfg.last_epoch, verbose=cfg.scheduler_verbosity)
+    
+    for epoch in tqdm(range(cfg.n_epochs), total=cfg.n_epochs, desc="training...", ncols=60):
+        model.train()
+
+        i = 0
+        epoch_loss = 0
+
+        for batch_idx, (imgs, annotations) in tqdm(enumerate(train_dl), total=len(train_dl), desc=f"{epoch+1} training...", ncols=60):
+            i += 1
+    
+            imgs = list(img.to(device) for img in imgs)
+            annotations = [{k: v.to(device) for k, v in t.items()} for t in annotations]
+
+            loss_dict = model(imgs, annotations)
+            losses = sum(loss for loss in loss_dict.values())
+
+            optimizer.zero_grad()
+            losses.backward()
+            optimizer.step()
+
+            epoch_loss += losses.item()
+
+        scheduler.step()
+
+        print(f'epoch : {epoch+1}, Loss : {epoch_loss}')
+
+        # test.frcnn_evaluate(cfg, model, test_dl)
+
+        torch.save(model.state_dict(),f'model_{cfg.try_cnt}.pt')
