@@ -1,4 +1,4 @@
-# Object detection for weeds
+# Weed Classification & Detection with few label
 
 ## Updates
 
