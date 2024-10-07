@@ -12,5 +12,4 @@
 
 ## datasets
 ai hub 정밀농업 농기계 잡초 인식 데이터 : https://aihub.or.kr/aihubdata/data/view.do?currMenu=115&topMenu=100&dataSetSn=527
-
-This is my first project of deep learning.
+Cotton WeedDet12
